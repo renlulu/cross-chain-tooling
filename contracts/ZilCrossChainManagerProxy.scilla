@@ -98,6 +98,13 @@ transition UnPause()
   send msgs
 end
 
+transition UpdateChainId(chainId: Uint64)
+  current_impl <- crosschain_manager;
+  msg = {_tag: "UpdateChainId"; _recipient: current_impl; _amount: zero; chainId: chainId; initiator: _sender};
+  msgs = one_msg msg;
+  send msgs
+end
+
 transition UpdateAdmin(newAdmin: ByStr20)
   current_impl <- crosschain_manager;
   msg = {_tag: "UpdateAdmin"; _recipient: current_impl; _amount: zero; initiator: _sender; newAdmin: newAdmin};
@@ -144,23 +151,44 @@ transition VerifyHeaderAndExecuteTx(proof: Proof, rawHeader: ByStr, headerProof:
   send msgs
 end
 
-transition PopulateWhiteListFromContract(addr: ByStr20, val: Bool)
+transition PopulateWhiteListFromContract(addr: ByStr20)
   current_impl <- crosschain_manager;
-  msg = {_tag: "PopulateWhiteListFromContract"; _recipient: current_impl; _amount: zero; addr: addr; val: val; initiator: _sender};
+  msg = {_tag: "PopulateWhiteListFromContract"; _recipient: current_impl; _amount: zero; addr: addr; initiator: _sender};
   msgs = one_msg msg;
   send msgs
 end
 
-transition PopulateWhiteListToContract(addr: ByStr20, val: Bool)
+transition DeleteWhiteListFromContract(addr: ByStr20)
   current_impl <- crosschain_manager;
-  msg = {_tag: "PopulateWhiteListToContract"; _recipient: current_impl; _amount: zero; addr: addr; val: val; initiator: _sender};
+  msg = {_tag: "DeleteWhiteListFromContract"; _recipient: current_impl; _amount: zero; addr: addr; initiator: _sender};
   msgs = one_msg msg;
   send msgs
 end
 
-transition PopulateWhiteListMethod(method: String, val: Bool)
+transition PopulateWhiteListToContract(addr: ByStr20)
   current_impl <- crosschain_manager;
-  msg = {_tag: "PopulateWhiteListMethod"; _recipient: current_impl; _amount: zero; method: method; val: val; initiator: _sender};
+  msg = {_tag: "PopulateWhiteListToContract"; _recipient: current_impl; _amount: zero; addr: addr; initiator: _sender};
+  msgs = one_msg msg;
+  send msgs
+end
+
+transition DeleteWhiteListToContract(addr: ByStr20)
+  current_impl <- crosschain_manager;
+  msg = {_tag: "DeleteWhiteListToContract"; _recipient: current_impl; _amount: zero; addr: addr; initiator: _sender};
+  msgs = one_msg msg;
+  send msgs
+end
+
+transition PopulateWhiteListMethod(method: String)
+  current_impl <- crosschain_manager;
+  msg = {_tag: "PopulateWhiteListMethod"; _recipient: current_impl; _amount: zero; method: method; initiator: _sender};
+  msgs = one_msg msg;
+  send msgs
+end
+
+transition DeleteWhiteListMethod(addr: ByStr20)
+  current_impl <- crosschain_manager;
+  msg = {_tag: "DeleteWhiteListMethod"; _recipient: current_impl; _amount: zero; addr: addr; initiator: _sender};
   msgs = one_msg msg;
   send msgs
 end

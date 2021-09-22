@@ -14,7 +14,6 @@ let one_msg =
 let bool_active = True
 let bool_inactive = False
 
-
 type Error =
   | ContractFrozenFailure
   | ConPubKeysAlreadyInitialized
@@ -73,6 +72,7 @@ contract ZilCrossChainManager(
   init_admin: ByStr20
 )
 
+field thisChainId: Uint64 = this_chain_id
 field paused: Bool = True
 (* When Poly chain switches the consensus epoch book keepers, *)
 (* the consensus peers public keys of Poly chain should be    *)
@@ -94,9 +94,9 @@ field zilToPolyTxHashIndex: Uint256 = Uint256 0
 field fromChainTxExist : Map Uint64 (Map ByStr32 Unit) = Emp Uint64 (Map ByStr32 Unit)
 field contractadmin: ByStr20  = init_admin
 field stagingcontractadmin: Option ByStr20 = None {ByStr20}
-field whiteListFromContract: Map ByStr20 Bool = Emp ByStr20 Bool
-field whiteListToContract: Map ByStr20 Bool = Emp ByStr20 Bool
-field whiteListMethod: Map String Bool = Emp String Bool
+field whiteListFromContract: Map ByStr20 Unit = Emp ByStr20 Unit
+field whiteListToContract: Map ByStr20 Unit = Emp ByStr20 Unit
+field whiteListMethod: Map String Unit = Emp String Unit
 
 (* Procedures *)
 
@@ -157,13 +157,7 @@ procedure validToContract(addr: ByStr20)
   val_opt <- whiteListToContract[addr];
   match val_opt with
   | Some val =>
-    match val with
-    | True =>
-    | False =>
-      e = InvalidToContract;
-      ThrowError e
-    end
-  | None => 
+  | None =>
     e = InvalidToContract;
     ThrowError e
   end
@@ -173,13 +167,7 @@ procedure validMethod(method: String)
   val_opt <- whiteListMethod[method];
   match val_opt with
   | Some val =>
-    match val with
-    | True =>
-    | False =>
-      e = InvalidMethod;
-      ThrowError e
-    end
-  | None => 
+  | None =>
     e = InvalidMethod;
     ThrowError e
   end
@@ -188,7 +176,8 @@ end
 procedure executeCrossChainTxn (txparam: TxParam, fromChainId: Uint64, crossChainTxHash: ByStr)
   match txparam with
   | TxParam txHash crossChainID fromContract toChainID toContract method args =>
-    toChainIDOk = builtin eq toChainID this_chain_id;
+    chainId <- thisChainId;
+    toChainIDOk = builtin eq toChainID chainId;
     match toChainIDOk with
     | True =>
       toContractAddr_o = builtin to_bystr20 toContract;
@@ -251,13 +240,7 @@ procedure validFromContract(addr: ByStr20)
   val_opt <- whiteListFromContract[addr];
   match val_opt with
   | Some val =>
-    match val with
-    | True =>
-    | False =>
-      e = InvalidFromContract;
-      ThrowError e
-    end
-  | None => 
+  | None =>
     e = InvalidFromContract;
     ThrowError e
   end
@@ -320,6 +303,12 @@ transition UnPause(initiator: ByStr20)
   IsProxy;
   IsAdmin initiator;
   paused := bool_inactive
+end
+
+transition UpdateChainId(chainId: Uint64, initiator: ByStr20)
+  IsProxy;
+  IsAdmin initiator;
+  thisChainId := chainId
 end
 
 (***************************************************)
@@ -536,22 +525,40 @@ transition VerifyHeaderAndExecuteTx(proof: Proof, rawHeader: ByStr, headerProof:
 end
 
 
-transition PopulateWhiteListFromContract(addr: ByStr20, val: Bool, initiator: ByStr20)
+transition PopulateWhiteListFromContract(addr: ByStr20, initiator: ByStr20)
   IsProxy;
   IsAdmin initiator;
-  whiteListFromContract[addr] := val
+  whiteListFromContract[addr] := unit
 end
 
-transition PopulateWhiteListToContract(addr: ByStr20, val: Bool, initiator: ByStr20)
+transition DeleteWhiteListFromContract(addr: ByStr20, initiator: ByStr20)
   IsProxy;
   IsAdmin initiator;
-  whiteListToContract[addr] := val
+  delete whiteListFromContract[addr]
 end
 
-transition PopulateWhiteListMethod(method: String, val: Bool, initiator: ByStr20)
+transition PopulateWhiteListToContract(addr: ByStr20, initiator: ByStr20)
   IsProxy;
   IsAdmin initiator;
-  whiteListMethod[method] := val
+  whiteListToContract[addr] := unit
+end
+
+transition DeleteWhiteListToContract(addr: ByStr20, initiator: ByStr20)
+  IsProxy;
+  IsAdmin initiator;
+  delete whiteListToContract[addr]
+end
+
+transition PopulateWhiteListMethod(method: String, initiator: ByStr20)
+  IsProxy;
+  IsAdmin initiator;
+  whiteListMethod[method] := unit
+end
+
+transition DeleteWhiteListMethod(method: String, initiator: ByStr20)
+  IsProxy;
+  IsAdmin initiator;
+  delete whiteListMethod[method]
 end
 
 transition PopulateConKeepersPublicKeyList(keepers: List ByStr20, initiator: ByStr20)
