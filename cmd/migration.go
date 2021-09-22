@@ -48,7 +48,7 @@ var migrationCmd = &cobra.Command{
 			ChainId:    chainId,
 			MsgVersion: util.MsgVersion,
 		}
-		fmt.Println(p)
+
 		// current we skip follow transitions:
 		// PopulateWhiteListFromContract
 		// PopulateWhiteListToContract

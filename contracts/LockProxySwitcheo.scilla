@@ -262,17 +262,6 @@ procedure increaseNonce()
  nonce := new_nonce
 end
 
-procedure validateFromChainId(fromChainId: Uint64)
-  counter_part_id <- counterpart_chainId;
-  equal = builtin eq counter_part_id fromChainId;
-  match equal with
-  | True =>
-  | False =>
-    e = InvalidFromChainId;
-    ThrowError e
-  end
-end
-
 (* lock amount should not be zero *)
 procedure validateAmount(amount: Uint128)
   is_zero = builtin eq amount uint128_zero;
@@ -321,14 +310,14 @@ end
 (* @param toAddress: address is this contract: _this_address *)
 (* @param amount:   The amount of tokens to be crossed from ethereum to the chain with chainId  *)
 procedure transferZRC2ToContract(fromAssetHash: ByStr20, fromAddress: ByStr20, toAddress: ByStr20, amount: Uint128)
-  msg_to_zrc2 = {_tag: "TransferFrom"; _recipient: fromAssetHash; _amount: uint128_zero; 
+  msg_to_zrc2 = {_tag: "TransferFrom"; _recipient: fromAssetHash; _amount: uint128_zero;
                   from: fromAddress; to: toAddress; amount: amount};
   msgs = one_msg msg_to_zrc2;
   send msgs
 end
 
 procedure transferZRC2FromContract(toAssetHash: ByStr20, address: ByStr20, amount: Uint128)
-  msg_to_zrc2 = {_tag: "Transfer"; _recipient: toAssetHash; _amount: uint128_zero; 
+  msg_to_zrc2 = {_tag: "Transfer"; _recipient: toAssetHash; _amount: uint128_zero;
                  to: address; amount: amount};
   msgs = one_msg msg_to_zrc2;
   send msgs
@@ -398,7 +387,7 @@ end
 
 procedure CrossChain(toChainId: Uint64, toContract: ByStr, method: ByStr, txData: ByStr)
   manager_proxy_l <- manager_proxy;
-  msg = {_tag: "CrossChain"; _recipient: manager_proxy_l; _amount: uint128_zero; 
+  msg = {_tag: "CrossChain"; _recipient: manager_proxy_l; _amount: uint128_zero;
         toChainId: toChainId; toContract: toContract; method: method; txData: txData };
   msgs = one_msg msg;
   send msgs
@@ -460,7 +449,7 @@ procedure ValidateAssetRegistration(tokenAddr: ByStr20, proxyAddr: ByStr, toAsse
       e = AssetNotRegistered;
       ThrowError e
     end
-  | None => 
+  | None =>
     e = AssetNotRegistered;
     ThrowError e
   end
@@ -469,12 +458,12 @@ end
 (* Validates the asset registertion and calls the CCM contract *)
 procedure lockProcedure(
   tokenAddr: ByStr20,
-  targetProxyHash: ByStr, 
-  toAssetHash: ByStr, 
-  fromAddr: ByStr20, 
-  toAddress: ByStr, 
-  amount: Uint256, 
-  feeAmount: Uint256, 
+  targetProxyHash: ByStr,
+  toAssetHash: ByStr,
+  fromAddr: ByStr20,
+  toAddress: ByStr,
+  amount: Uint256,
+  feeAmount: Uint256,
   feeAddr: ByStr
 )
   validateAddrLength targetProxyHash;
@@ -497,7 +486,7 @@ procedure lockProcedure(
       tx_data = serialize_transfer_tx_args transfer_tx_args;
       counterpartChainId <- counterpart_chainId;
       CrossChain counterpartChainId targetProxyHash unlock tx_data;
-      e = { _eventname: "Lock"; fromAssetHash: fromAssetHash; fromAddress: fromAddress; toChainId: counterpartChainId; 
+      e = { _eventname: "Lock"; fromAssetHash: fromAssetHash; fromAddress: fromAddress; toChainId: counterpartChainId;
           toAssetHash: toAssetHash; toAddress: toAddress; amount: amount; feeAmount: feeAmount; tx_data: tx_data};
       event e
     | None =>
@@ -572,7 +561,7 @@ end
 (* @param feeAmount: the number of tokens to be used as fees *)
 transition lock(
   tokenAddr: ByStr20,
-  targetProxyHash: ByStr, 
+  targetProxyHash: ByStr,
   toAddress: ByStr,
   toAssetHash: ByStr,
   feeAddr: ByStr,
@@ -634,7 +623,7 @@ transition unlock(
 )
   isNotPaused;
   IsManagerContract _sender;
-  validateFromChainId fromChainId;
+  ValidateCounterpartChainId fromChainId;
   transfer_tx_args_o = deserialize_transfer_tx_args args uint32_zero;
   match transfer_tx_args_o with
   | Some (TransferTxArgs fromAssetHash toAssetHash toAddress fromAddress amount feeAmount feeAddress n) =>
@@ -686,7 +675,7 @@ end
 
 transition AddFunds()
   accept;
-  e = { _eventname : "Funds deposit "; funder : _sender };
+  e = { _eventname : "Funds deposit "; funder : _sender; amount: _amount };
   event e
 end
 
@@ -712,4 +701,12 @@ end
 transition TransferFromSuccessCallBack(initiator: ByStr20, sender: ByStr20, recipient: ByStr20, amount: Uint128)
 end
 
+transition PopulateNonce(n: Uint256)
+  IsAdmin _sender;
+  nonce := n
+end
 
+transition PopulateRegister(asset: ByStr20, hash: ByStr32)
+  IsAdmin _sender;
+  register[asset] := hash
+end
